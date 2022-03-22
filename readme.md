@@ -85,6 +85,9 @@ import {vReactiveAsArray} from "abolish-vue";
 const [email, emailError, validatedForm] = vReactiveAsArray({
     name: "John Doe", 
    email: "SomeMail@example.com",
+}, {
+  name: "required|string:trim|min:2|max:10",
+  email: "required|email"
 });
 
 // `0` is the value being validated
