@@ -104,7 +104,7 @@ export function vRef<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOpt
             (options.Abolish || Abolish).checkAsync(newVal, rules).then(([e, r]) => {
                 // Update error and result
                 error.value = e ? e : undefined;
-                validated.value = r as any;
+                if (!e) validated.value = r as any;
             });
         } else {
             // Validate target
