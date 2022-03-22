@@ -12,7 +12,7 @@ es.buildSync({
     bundle: true,
     legalComments: "none",
     treeShaking: true,
-    minify: false,
+    minify: true,
     external: ["abolish"]
 });
 
