@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Abolish vue 3 functions",
   "main": "index.js",
+  "types": "index.d.ts",
   "author": "trapcodeio",
   "license": "MIT",
   "repository": "https://github.com/trapcodeio/abolish-vue.git",
