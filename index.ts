@@ -1,12 +1,12 @@
 import type { AbolishRule, ValidationError } from "abolish/src/Types";
-import { reactive, readonly, ref, UnwrapRef, watch } from "vue";
+import { inject, Plugin, reactive, readonly, ref, UnwrapRef, watch } from "vue";
 import { extendRef, watchDebounced } from "@vueuse/core";
 import { Abolish, Rule } from "abolish/index.esm";
 
 export type VReactiveOptions = {
     async?: boolean;
     delay?: number | true;
-    Abolish?: typeof Abolish;
+    Abolish?: Abolish | typeof Abolish;
 };
 
 export type VRefOptions = VReactiveOptions & { name?: string };
@@ -22,6 +22,8 @@ export function vReactive<R extends Record<string | keyof T, AbolishRule>, T ext
     rules: R,
     options: VReactiveOptions = {}
 ) {
+    const abolish = options.Abolish || inject("abolish", Abolish);
+
     /**
      * Explicitly explain types.
      */
@@ -38,14 +40,14 @@ export function vReactive<R extends Record<string | keyof T, AbolishRule>, T ext
 
     const watchFn = (newVal: typeof t) => {
         if (options.async) {
-            (options.Abolish || Abolish).validateAsync(newVal, rules).then(([e, r]) => {
+            abolish.validateAsync(newVal, rules).then(([e, r]) => {
                 // Update error and result
                 error.value = e ? e : undefined;
                 validated.value = r;
             });
         } else {
             // Validate target
-            const [e, r] = (options.Abolish || Abolish).validate(newVal, rules);
+            const [e, r] = abolish.validate(newVal, rules);
 
             // Update error and result
             error.value = e ? e : undefined;
@@ -89,6 +91,8 @@ export function vReactiveAsArray<R extends Record<string | keyof T, AbolishRule>
  * @param options
  */
 export function vRef<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOptions = {}) {
+    const abolish = options.Abolish || inject("abolish", Abolish);
+
     const error = ref<ValidationError>();
     const original = ref<IN>(def);
 
@@ -101,14 +105,14 @@ export function vRef<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOpt
 
     const watchFn = (newVal: UnwrapRef<typeof original>) => {
         if (options.async) {
-            (options.Abolish || Abolish).checkAsync(newVal, rules).then(([e, r]) => {
+            abolish.checkAsync(newVal, rules).then(([e, r]) => {
                 // Update error and result
                 error.value = e ? e : undefined;
                 if (!e) validated.value = r as any;
             });
         } else {
             // Validate target
-            const [e, r] = (options.Abolish || Abolish).check(newVal, rules);
+            const [e, r] = abolish.check(newVal, rules);
 
             // Update error and result
             error.value = e ? e : undefined;
@@ -151,3 +155,26 @@ export function vRefExtended<IN, OUT = IN>(def: IN, rules: AbolishRule, options:
     const { original, error, validated } = vRef<IN, OUT>(def, rules, options);
     return extendRef(original, { error, validated });
 }
+
+/**
+ * =============================================================
+ * ======================= PLUGIN SECTION ======================
+ * =============================================================
+ */
+export type AbolishPlugin = {
+    abolish?: () => InstanceType<typeof Abolish>;
+    init?: () => void;
+};
+
+export const AbolishPlugin: Plugin = {
+    install(app, options: AbolishPlugin = {}) {
+        // Run Init
+        if (options.init) options.init();
+
+        // Register Abolish
+        const abolish = options.abolish ? options.abolish() : new Abolish();
+
+        // Provide Abolish
+        app.provide("abolish", abolish);
+    }
+};

@@ -95,3 +95,51 @@ const [email, emailError, validatedForm] = vReactiveAsArray({
 // `2` is the validated object
 </script>
 ```
+
+
+### vRefExtended
+
+`vRefExtended` is the same as `vRef` but uses **vueuse** [extendRef](https://vueuse.org/shared/extendRef/) to extend the validating ref variable.
+
+```vue
+<script setup>
+import {vRefExtended} from "abolish-vue"; 
+
+const name = vRefExtended(" John Doe ", "string:trim|min:2|max:10")
+
+name.value // " John Doe "
+name.error // "Validation error"
+name.validated // Validated result i.e "John Doe"
+</script>
+```
+
+The downside of using `vRefExtended` is: `error` and `validated` cannot be used in `<template>` tag.
+
+```vue
+<template>
+  <div>
+    <input v-model="name" />
+    <!-- This will not work 🚫  -->
+    <span>{{ name.error }}</span>
+    
+    <!-- This will not work also 🚫  -->
+    <span>{{ name.validated }}</span>
+  </div>
+</template>
+```
+
+To access them in template, you have to create a computed property like so:
+
+```vue
+<script setup>
+import {vRefExtended} from "abolish-vue"; 
+
+const name = vRefExtended(" John Doe ", "string:trim|min:2|max:10")
+
+name.value // " John Doe "
+name.error // "Validation error"
+name.validated // Validated result i.e "John Doe"
+</script>
+```
+
+
