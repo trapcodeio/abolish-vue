@@ -162,7 +162,7 @@ export function vRefExtended<IN, OUT = IN>(def: IN, rules: AbolishRule, options:
  * =============================================================
  */
 export type AbolishPlugin = {
-    abolish?: () => InstanceType<typeof Abolish>;
+    abolish?: () => Abolish | typeof Abolish;
     init?: () => void;
 };
 
