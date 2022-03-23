@@ -3,10 +3,12 @@ import { inject, Plugin, reactive, readonly, ref, UnwrapRef, watch } from "vue";
 import { extendRef, watchDebounced } from "@vueuse/core";
 import { Abolish, Rule } from "abolish/index.esm";
 
+export type AbolishClassOrInstance = typeof Abolish | InstanceType<typeof Abolish>;
+
 export type VReactiveOptions = {
     async?: boolean;
     delay?: number | true;
-    Abolish?: Abolish | typeof Abolish;
+    Abolish?: AbolishClassOrInstance;
 };
 
 export type VRefOptions = VReactiveOptions & { name?: string };
@@ -162,8 +164,8 @@ export function vRefExtended<IN, OUT = IN>(def: IN, rules: AbolishRule, options:
  * =============================================================
  */
 export type AbolishPlugin = {
-    abolish?: () => Abolish | typeof Abolish;
     init?: () => void;
+    abolish?: () => AbolishClassOrInstance;
 };
 
 export const AbolishPlugin: Plugin = {
