@@ -10,8 +10,32 @@ npm i --save abolish abolish-vue
 yarn add abolish abolish-vue
 ```
 
-## Functions    
+## Setup
+This setup is only required if you want to provide a custom `abolish` instance or extend validators
 
+```js
+import {AbolishPlugin} from 'abolish-vue';
+import {Abolish} from 'abolish';
+
+app.use(AbolishPlugin, {
+  init(){
+      // add custom validators E.g
+      Abolish.addValidator('custom', validator);
+  },
+  abolish(){
+      // return custom abolish instance E.g
+      return new Abolish()
+  }
+});
+```
+To get options types for typescript
+
+```ts
+app.use(AbolishPlugin, <AbolishPlugin>{
+    // options here will be typed
+});
+```
+## Functions    
 
 ### vRef
 `vRef` stands for "validated Ref". This function creates a ref that is watched and validated
@@ -131,14 +155,26 @@ The downside of using `vRefExtended` is: `error` and `validated` cannot be used 
 To access them in template, you have to create a computed property like so:
 
 ```vue
+<template>
+  <div>
+    <input v-model="name" />
+    <!-- These should work and reactive ✅  -->
+    <span>{{ nameError }}</span>
+    
+    <!-- This will also work ✅  -->
+    <span>{{ validatedName }}</span>
+  </div>
+</template>
+
 <script setup>
 import {vRefExtended} from "abolish-vue"; 
+import {computed} from 'vue'; 
 
 const name = vRefExtended(" John Doe ", "string:trim|min:2|max:10")
 
-name.value // " John Doe "
-name.error // "Validation error"
-name.validated // Validated result i.e "John Doe"
+// This will work ✅
+const nameError = computed(() => name.error);
+const validatedName = computed(() => name.validated);
 </script>
 ```
 
