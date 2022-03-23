@@ -24,5 +24,12 @@
     "prettier": "^2.6.0",
     "typescript": "^4.6.2",
     "vue": "^3.2.31"
-  }
+  },
+
+  "keywords": [
+    "abolish",
+    "vue",
+    "validation",
+    "vue 3"
+  ]
 }
