@@ -70,8 +70,8 @@ const {
 import {vReactive} from "abolish-vue"; 
 
 const {
-  original: name, 
-  error: nameError,
+  original: form, 
+  error: formError,
   validated: validatedForm
 } = vReactive({
     name: "John Doe", 
