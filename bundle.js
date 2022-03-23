@@ -13,7 +13,7 @@ es.buildSync({
     legalComments: "none",
     treeShaking: true,
     minify: true,
-    external: ["abolish"]
+    external: ["abolish", "vue"]
 });
 
 const fileEsm = __dirname + "/index.esm-bundled.js";
