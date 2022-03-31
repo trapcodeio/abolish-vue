@@ -106,7 +106,7 @@ const [email, emailError] = vRefAsArray("John Doe", "string:trim|min:2|max:10");
 <script setup>
 import {vReactiveAsArray} from "abolish-vue"; 
 
-const [email, emailError, validatedForm] = vReactiveAsArray({
+const [form, formError, validatedForm] = vReactiveAsArray({
     name: "John Doe", 
    email: "SomeMail@example.com",
 }, {
