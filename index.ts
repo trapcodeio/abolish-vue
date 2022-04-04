@@ -145,7 +145,11 @@ export function vReactiveAsArray<R extends Record<string | keyof T, AbolishRule>
  * // `error` is the error message
  * // `validated` is the validated value
  */
-export function vRef<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOptions = {}) {
+export function vRef<IN, OUT = IN>(
+    def: IN,
+    rules: AbolishRule,
+    options: VRefOptions = { immediate: true }
+) {
     const abolish = options.Abolish || inject("abolish", Abolish);
 
     const error = ref<ValidationError>();
