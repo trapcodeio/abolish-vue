@@ -250,12 +250,12 @@ export function rCheck<IN, OUT = IN>(
     const watchFn = (newValue: IN) => {
         if (options.async) {
             abolish.checkAsync(newValue, rule).then(([e, v]) => {
-                if (e) error.value = e;
+                error.value = e ? e : undefined;
                 validated.value = v as unknown as OUT;
             });
         } else {
             const [e, v] = abolish.check(newValue, rule);
-            if (e) error.value = e;
+            error.value = e ? e : undefined;
             validated.value = v as unknown as OUT;
         }
     };
@@ -298,11 +298,11 @@ export function rCheckOnly<IN>(
     const watchFn = (newValue: IN) => {
         if (options.async) {
             abolish.checkAsync(newValue, rule).then((d) => {
-                if (d[0]) error.value = d[0];
+                error.value = d[0] ? d[0] : undefined;
             });
         } else {
             const d = Abolish.check(newValue, rule);
-            if (d[0]) error.value = d[0];
+            error.value = d[0] ? d[0] : undefined;
         }
     };
 
