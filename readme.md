@@ -2,6 +2,21 @@
 
 A set of functions to make real time validation easier.
 
+## Menu
+
+  * [Installation](#installation)
+  * [Setup](#setup)
+  * [Functions](#functions)
+    * [vRef](#vref)
+    * [vReactive](#vreactive)
+    * [vRefAsArray](#vrefasarray)
+    * [vReactiveAsArray](#vreactiveasarray)
+    * [vRefExtended](#vrefextended)
+    * [rCheck](#rcheck)
+    * [rCheckOnly](#rcheckonly)
+    * [rTest](#rtest)
+    
+
 ## Installation
 Install `abolish` and this package.
 ```shell
@@ -176,6 +191,87 @@ const name = vRefExtended(" John Doe ", "string:trim|min:2|max:10")
 const nameError = computed(() => name.error);
 const validatedName = computed(() => name.validated);
 </script>
+```
+
+### rCheck
+`rCheck` stands for "reactive/realtime check". it converts `Abolish.check()` to a reactive realtime validation function.
+
+Unlike `vRef` and `vReactive`, `rCheck` takes an already declared `ref` or a function and validates its value
+
+```ts
+import {ref} from "vue";
+import {rCheck} from "abolish-vue"; 
+
+const name = ref('what to validate on any change.');
+const [error, validated] = rCheck(name, rules);
+
+// `0` i.e `error` is the error message
+// `1` i.e `validated` is the validated object
+
+// OR using a function
+const firstName = ref('John');
+const lastName = ref('Doe');
+
+const [ageError, validatedAge] = rCheck(() => {
+    // because firstName and lastName used and reactive, 
+    // this function will be called any time either of them changes
+    return firstName.value + ' ' + lastName.value;
+}, "string:trim|min:2|max:10");
+```
+
+
+### rCheckOnly
+`rCheckOnly` stands for "reactive/realtime check only". It is the same as `rCheck` but does not return the validated object.
+This can improve performance when you are only interested in the error message.
+
+```ts
+import {ref} from "vue";
+import {rCheckOnly} from "abolish-vue"; 
+
+const name = ref('what to validate on any change.');
+const error = rCheckOnly(name, rules);
+
+// `error` is the error message is returned
+
+// OR using a function
+const firstName = ref('John');
+const lastName = ref('Doe');
+
+const ageError = rCheckOnly(() => {
+    // because firstName and lastName used and reactive, 
+    // this function will be called any time either of them changes
+    return firstName.value + ' ' + lastName.value;
+}, "string:trim|min:2|max:10");
+
+```
+
+
+### rTest
+`rTest` stands for "reactive/realtime test". it converts `Abolish.test()` to a reactive realtime validation function.
+
+
+`rTest` just like `Abolish.test()` takes a value and a rule and returns a boolean.
+
+```ts
+import {ref} from "vue";
+import {rTest} from "abolish-vue"; 
+
+const variable = ref('what to validate on any change.');
+const isValid = rTest(variable, rules);
+
+isValid.value // true or false
+
+// OR using a function
+const firstName = ref('John');
+const lastName = ref('Doe');
+
+const isValidAge = rTest(() => {
+    // because firstName and lastName used and reactive, 
+    // this function will be called any time either of them changes
+    return firstName.value + ' ' + lastName.value;
+}, "string:trim|min:2|max:10");
+
+isValidAge.value // true or false
 ```
 
 

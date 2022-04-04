@@ -1,28 +1,62 @@
 import type { AbolishRule, ValidationError } from "abolish/src/Types";
-import { inject, Plugin, reactive, readonly, ref, UnwrapRef, watch } from "vue";
+import { inject, Plugin, reactive, readonly, Ref, ref, UnwrapRef, watch } from "vue";
 import { extendRef, watchDebounced } from "@vueuse/core";
 import { Abolish, Rule } from "abolish/index.esm";
 
 export type AbolishClassOrInstance = typeof Abolish | InstanceType<typeof Abolish>;
 
-export type VReactiveOptions = {
+/**
+ * =============================================================
+ * ======================= PLUGIN SECTION ======================
+ * =============================================================
+ */
+export type AbolishPlugin = {
+    init?: () => void;
+    abolish?: () => AbolishClassOrInstance;
+};
+
+export const AbolishPlugin: Plugin = {
+    install(app, options: AbolishPlugin = {}) {
+        // Run Init
+        if (options.init) options.init();
+
+        // Register Abolish
+        const abolish = options.abolish ? options.abolish() : new Abolish();
+
+        // Provide Abolish
+        app.provide("abolish", abolish);
+    }
+};
+
+export type AbolishVueOptions = {
     async?: boolean;
     delay?: number | true;
     Abolish?: AbolishClassOrInstance;
+    immediate?: boolean;
 };
 
-export type VRefOptions = VReactiveOptions & { name?: string };
+export type VRefOptions = AbolishVueOptions & { name?: string };
 
 /**
  * Validate a reactive object in real time
  * @param target
  * @param rules
  * @param options
+ *
+ * @example
+ * const {original, error, validated} = vReactive({
+ *     name: "John Doe",
+ *     email: "SomeMail@example.com",
+ * });
+ *
+ * // `original` is the value being validated
+ * // `error` is the error message
+ * // `validated` is the validated object
  */
 export function vReactive<R extends Record<string | keyof T, AbolishRule>, T extends object>(
     target: T,
     rules: R,
-    options: VReactiveOptions = {}
+    options: AbolishVueOptions = { immediate: true }
 ) {
     const abolish = options.Abolish || inject("abolish", Abolish);
 
@@ -60,11 +94,11 @@ export function vReactive<R extends Record<string | keyof T, AbolishRule>, T ext
     // watch for changes
     if (options.delay) {
         watchDebounced(t, watchFn, {
-            immediate: true,
+            immediate: options.immediate,
             debounce: options.delay === true ? 1000 : options.delay
         });
     } else {
-        watch(t, watchFn, { immediate: true });
+        watch(t, watchFn, { immediate: options.immediate });
     }
 
     return { original: t, error: readonly(error), validated };
@@ -75,11 +109,24 @@ export function vReactive<R extends Record<string | keyof T, AbolishRule>, T ext
  * @param target
  * @param rules
  * @param options
+ *
+ * @example
+ * const [data, dataError, validatedData] = vReactiveAsArray({
+ *     name: "John Doe",
+ *    email: "SomeMail@example.com",
+ * }, {
+ *   name: "required|string:trim|min:2|max:10",
+ *   email: "required|email"
+ * });
+ *
+ * // `0` is the value being validated
+ * // `1` is the error message
+ * // `2` is the validated object
  */
 export function vReactiveAsArray<R extends Record<string | keyof T, AbolishRule>, T extends object>(
     target: T,
     rules: R,
-    options: VReactiveOptions = {}
+    options?: AbolishVueOptions
 ) {
     const { original, error, validated } = vReactive(target, rules, options);
 
@@ -91,6 +138,12 @@ export function vReactiveAsArray<R extends Record<string | keyof T, AbolishRule>
  * @param def
  * @param rules
  * @param options
+ *
+ * @example
+ * const {original, error, validated} = vRef(value, rules);
+ * // `original` is the value being validated
+ * // `error` is the error message
+ * // `validated` is the validated value
  */
 export function vRef<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOptions = {}) {
     const abolish = options.Abolish || inject("abolish", Abolish);
@@ -125,11 +178,11 @@ export function vRef<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOpt
     // watch for changes
     if (options.delay) {
         watchDebounced(original, watchFn, {
-            immediate: true,
+            immediate: options.immediate,
             debounce: options.delay === true ? 1000 : options.delay
         });
     } else {
-        watch(original, watchFn, { immediate: true });
+        watch(original, watchFn, { immediate: options.immediate });
     }
 
     return { original, error: readonly(error), validated };
@@ -140,8 +193,14 @@ export function vRef<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOpt
  * @param def
  * @param rules
  * @param options
+ *
+ * @example
+ * const [original, error, validated] = vRefAsArray(value, rules);
+ * // `original` is the value being validated
+ * // `error` is the error message
+ * // `validated` is the validated value
  */
-export function vRefAsArray<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOptions = {}) {
+export function vRefAsArray<IN, OUT = IN>(def: IN, rules: AbolishRule, options?: VRefOptions) {
     const { original, error, validated } = vRef<IN, OUT>(def, rules, options);
 
     return [original, error, validated] as [typeof original, typeof error, typeof validated];
@@ -152,6 +211,13 @@ export function vRefAsArray<IN, OUT = IN>(def: IN, rules: AbolishRule, options: 
  * @param def
  * @param rules
  * @param options
+ *
+ * @example
+ * const name = vRefExtended(value, rule)
+ *
+ * name.value // " John Doe "
+ * name.error // "Validation error"
+ * name.validated // Validated result i.e "John Doe"
  */
 export function vRefExtended<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOptions = {}) {
     const { original, error, validated } = vRef<IN, OUT>(def, rules, options);
@@ -159,24 +225,140 @@ export function vRefExtended<IN, OUT = IN>(def: IN, rules: AbolishRule, options:
 }
 
 /**
- * =============================================================
- * ======================= PLUGIN SECTION ======================
- * =============================================================
+ * rCheck stands for reactive check.
+ * It is the reactive version of Abolish.check()
+ * @param source
+ * @param rule
+ * @param options
+ *
+ * @example
+ * const source = Ref(value) | () => value;
+ * const [error, result] = rCheck(source, rule);
+ * // `error` is the error message
+ * // `result` is the validated value
  */
-export type AbolishPlugin = {
-    init?: () => void;
-    abolish?: () => AbolishClassOrInstance;
-};
+export function rCheck<IN, OUT = IN>(
+    source: Ref<IN> | (() => IN),
+    rule: AbolishRule,
+    options: AbolishVueOptions = { immediate: true }
+) {
+    const abolish = options.Abolish || inject("abolish", Abolish);
 
-export const AbolishPlugin: Plugin = {
-    install(app, options: AbolishPlugin = {}) {
-        // Run Init
-        if (options.init) options.init();
+    const error = ref<ValidationError>();
+    const validated = ref<OUT>();
 
-        // Register Abolish
-        const abolish = options.abolish ? options.abolish() : new Abolish();
+    const watchFn = (newValue: IN) => {
+        if (options.async) {
+            abolish.checkAsync(newValue, rule).then(([e, v]) => {
+                if (e) error.value = e;
+                validated.value = v as unknown as OUT;
+            });
+        } else {
+            const [e, v] = abolish.check(newValue, rule);
+            if (e) error.value = e;
+            validated.value = v as unknown as OUT;
+        }
+    };
 
-        // Provide Abolish
-        app.provide("abolish", abolish);
+    // watch for changes
+    if (options.delay) {
+        watchDebounced(source, watchFn, {
+            immediate: options.immediate,
+            debounce: options.delay === true ? 1000 : options.delay
+        });
+    } else {
+        watch(source, watchFn, { immediate: options.immediate });
     }
-};
+
+    return [error, validated] as [typeof error, typeof validated];
+}
+
+/**
+ * rCheckOnly stands for reactive check only.
+ * This is same as rCheck but without the validated value.
+ *
+ * This will improve performance when you don't need the validated value.
+ * @param source
+ * @param rule
+ * @param options
+ *
+ * @example
+ * const source = Ref(value) | () => value;
+ * const error = rCheckOnly(source, rule);
+ */
+export function rCheckOnly<IN>(
+    source: Ref<IN> | (() => IN),
+    rule: AbolishRule,
+    options: AbolishVueOptions = { immediate: true }
+) {
+    const abolish = options.Abolish || inject("abolish", Abolish);
+
+    const error = ref<ValidationError>();
+
+    const watchFn = (newValue: IN) => {
+        if (options.async) {
+            abolish.checkAsync(newValue, rule).then((d) => {
+                if (d[0]) error.value = d[0];
+            });
+        } else {
+            const d = Abolish.check(newValue, rule);
+            if (d[0]) error.value = d[0];
+        }
+    };
+
+    // watch for changes
+    if (options.delay) {
+        watchDebounced(source, watchFn, {
+            immediate: options.immediate,
+            debounce: options.delay === true ? 1000 : options.delay
+        });
+    } else {
+        watch(source, watchFn, { immediate: options.immediate });
+    }
+
+    return error;
+}
+
+/**
+ * rTest stands for reactive test.
+ * It is the reactive version of Abolish.test()
+ * @param source
+ * @param rule
+ * @param options
+ *
+ * @example
+ * const source = Ref(value) | () => value;
+ * const isValid = rTest(source, rule);
+ * // `isValid` is the boolean result of test
+ */
+export function rTest<IN>(
+    source: Ref<IN> | (() => IN),
+    rule: AbolishRule,
+    options: AbolishVueOptions = { immediate: true }
+) {
+    const abolish = options.Abolish || inject("abolish", Abolish);
+
+    const result = ref<boolean>(true);
+
+    const watchFn = (newValue: IN) => {
+        if (options.async) {
+            abolish.testAsync(newValue, rule).then((d) => {
+                result.value = d;
+            });
+        } else {
+            result.value = abolish.test(newValue, rule);
+        }
+    };
+
+    // watch for changes
+    if (options.delay) {
+        watchDebounced(source, watchFn, {
+            immediate: options.immediate,
+            debounce: options.delay === true ? 1000 : options.delay
+        });
+    } else {
+        watch(source, watchFn, { immediate: options.immediate });
+    }
+
+    return result;
+}
