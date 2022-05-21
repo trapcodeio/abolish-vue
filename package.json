@@ -18,12 +18,12 @@
     "vue": "^3.2.0"
   },
   "devDependencies": {
-    "@vueuse/core": "^8.1.2",
-    "abolish": "^4.11.2",
-    "esbuild": "^0.14.27",
+    "@vueuse/core": "^8.5.0",
+    "abolish": "^4.12.3",
+    "esbuild": "^0.14.39",
     "prettier": "^2.6.0",
-    "typescript": "^4.6.2",
-    "vue": "^3.2.31"
+    "typescript": "^4.6.4",
+    "vue": "^3.2.35"
   },
   "keywords": [
     "abolish",
