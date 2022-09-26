@@ -14,7 +14,7 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "abolish": "^5.0.0",
+    "abolish": "^6.0.10",
     "vue": "^3.2.0"
   },
   "devDependencies": {
