@@ -2,8 +2,8 @@ import type { AbolishRule, ValidationError } from "abolish/src/Types";
 import { inject, Plugin, reactive, readonly, Ref, ref, UnwrapRef, watch } from "vue";
 import { extendRef, watchDebounced } from "@vueuse/core";
 import { Abolish, Rule } from "abolish/index.esm";
-
-export type AbolishClassOrInstance = typeof Abolish | InstanceType<typeof Abolish>;
+import type { TypeOfAbolishOrInstance } from "abolish/src/Abolish";
+import type { AbolishCompiled, AbolishCompiledObject } from "abolish/src/Compiler";
 
 /**
  * =============================================================
@@ -12,7 +12,7 @@ export type AbolishClassOrInstance = typeof Abolish | InstanceType<typeof Abolis
  */
 export type AbolishPlugin = {
     init?: () => void;
-    abolish?: () => AbolishClassOrInstance;
+    abolish?: () => TypeOfAbolishOrInstance;
 };
 
 export const AbolishPlugin: Plugin = {
@@ -31,7 +31,7 @@ export const AbolishPlugin: Plugin = {
 export type AbolishVueOptions = {
     async?: boolean;
     delay?: number | true;
-    Abolish?: AbolishClassOrInstance;
+    Abolish?: TypeOfAbolishOrInstance;
     immediate?: boolean;
 };
 
@@ -53,12 +53,11 @@ export type VRefOptions = AbolishVueOptions & { name?: string };
  * // `error` is the error message
  * // `validated` is the validated object
  */
-export function vReactive<R extends Record<string | keyof T, AbolishRule>, T extends object>(
-    target: T,
-    rules: R,
-    options: AbolishVueOptions = {}
-) {
-    const abolish = options.Abolish || inject("abolish", Abolish);
+export function vReactive<
+    R extends Record<string | keyof T, AbolishRule> | AbolishCompiledObject,
+    T extends object
+>(target: T, rules: R, options: AbolishVueOptions = {}) {
+    const abolish = (options.Abolish || inject("abolish", Abolish)) as Abolish;
 
     /**
      * Explicitly explain types.
@@ -76,14 +75,14 @@ export function vReactive<R extends Record<string | keyof T, AbolishRule>, T ext
 
     const watchFn = (newVal: typeof t) => {
         if (options.async) {
-            abolish.validateAsync(newVal, rules).then(([e, r]) => {
+            abolish.validateAsync(newVal, rules as AbolishCompiledObject).then(([e, r]) => {
                 // Update error and result
                 error.value = e ? e : undefined;
                 validated.value = r;
             });
         } else {
             // Validate target
-            const [e, r] = abolish.validate(newVal, rules);
+            const [e, r] = abolish.validate(newVal, rules as AbolishCompiledObject);
 
             // Update error and result
             error.value = e ? e : undefined;
@@ -123,11 +122,10 @@ export function vReactive<R extends Record<string | keyof T, AbolishRule>, T ext
  * // `1` is the error message
  * // `2` is the validated object
  */
-export function vReactiveAsArray<R extends Record<string | keyof T, AbolishRule>, T extends object>(
-    target: T,
-    rules: R,
-    options?: AbolishVueOptions
-) {
+export function vReactiveAsArray<
+    R extends Record<string | keyof T, AbolishRule> | AbolishCompiledObject,
+    T extends object
+>(target: T, rules: R, options?: AbolishVueOptions) {
     const { original, error, validated } = vReactive(target, rules, options);
 
     return [original, error, validated] as [typeof original, typeof error, typeof validated];
@@ -145,7 +143,11 @@ export function vReactiveAsArray<R extends Record<string | keyof T, AbolishRule>
  * // `error` is the error message
  * // `validated` is the validated value
  */
-export function vRef<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOptions = {}) {
+export function vRef<IN, OUT = IN>(
+    def: IN,
+    rules: AbolishRule | AbolishCompiled,
+    options: VRefOptions = {}
+) {
     const abolish = options.Abolish || inject("abolish", Abolish);
 
     const error = ref<ValidationError>();
@@ -154,9 +156,7 @@ export function vRef<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOpt
     type validated = OUT extends IN ? IN : OUT;
     const validated = ref(def as validated);
 
-    if (options.name) {
-        rules = Rule([rules, { $name: options.name }]);
-    }
+    if (options.name) rules = Rule([rules, { $name: options.name }]);
 
     const watchFn = (newVal: UnwrapRef<typeof original>) => {
         if (options.async) {
@@ -200,7 +200,11 @@ export function vRef<IN, OUT = IN>(def: IN, rules: AbolishRule, options: VRefOpt
  * // `error` is the error message
  * // `validated` is the validated value
  */
-export function vRefAsArray<IN, OUT = IN>(def: IN, rules: AbolishRule, options?: VRefOptions) {
+export function vRefAsArray<IN, OUT = IN>(
+    def: IN,
+    rules: AbolishRule | AbolishCompiled,
+    options?: VRefOptions
+) {
     const { original, error, validated } = vRef<IN, OUT>(def, rules, options);
 
     return [original, error, validated] as [typeof original, typeof error, typeof validated];
@@ -219,7 +223,11 @@ export function vRefAsArray<IN, OUT = IN>(def: IN, rules: AbolishRule, options?:
  * name.error // "Validation error"
  * name.validated // Validated result i.e "John Doe"
  */
-export function vRefExtended<IN, OUT = IN>(def: IN, rules: AbolishRule, options?: VRefOptions) {
+export function vRefExtended<IN, OUT = IN>(
+    def: IN,
+    rules: AbolishRule | AbolishCompiled,
+    options?: VRefOptions
+) {
     const { original, error, validated } = vRef<IN, OUT>(def, rules, options);
     return extendRef(original, { error, validated });
 }
@@ -239,7 +247,7 @@ export function vRefExtended<IN, OUT = IN>(def: IN, rules: AbolishRule, options?
  */
 export function rCheck<IN, OUT = IN>(
     source: Ref<IN> | (() => IN),
-    rule: AbolishRule,
+    rule: AbolishRule | AbolishCompiled,
     options: AbolishVueOptions = {}
 ) {
     const abolish = options.Abolish || inject("abolish", Abolish);
@@ -288,7 +296,7 @@ export function rCheck<IN, OUT = IN>(
  */
 export function rCheckOnly<IN>(
     source: Ref<IN> | (() => IN),
-    rule: AbolishRule,
+    rule: AbolishRule | AbolishCompiled,
     options: AbolishVueOptions = { immediate: true }
 ) {
     const abolish = options.Abolish || inject("abolish", Abolish);
@@ -333,7 +341,7 @@ export function rCheckOnly<IN>(
  */
 export function rTest<IN>(
     source: Ref<IN> | (() => IN),
-    rule: AbolishRule,
+    rule: AbolishRule | AbolishCompiled,
     options: AbolishVueOptions = {}
 ) {
     const abolish = options.Abolish || inject("abolish", Abolish);

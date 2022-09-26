@@ -91,6 +91,9 @@ const {
 } = vReactive({
     name: "John Doe", 
     email: "SomeMail@example.com",
+}, {
+    name: 'required|string:trim|min:2|max:10',
+    email: 'required|string:trim|email',
 });
 
 // `original` is the value being validated
