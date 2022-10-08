@@ -19,11 +19,11 @@
   },
   "devDependencies": {
     "@vueuse/core": "^9.3.0",
-    "abolish": "^6.0.10",
+    "abolish": "^6.3.0",
     "esbuild": "^0.15.9",
     "prettier": "^2.7.1",
-    "typescript": "^4.8.3",
-    "vue": "^3.2.39"
+    "typescript": "^4.8.4",
+    "vue": "^3.2.40"
   },
   "keywords": [
     "abolish",
