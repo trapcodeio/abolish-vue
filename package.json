@@ -1,6 +1,6 @@
 {
   "name": "abolish-vue",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Abolish vue 3 functions",
   "main": "index.js",
   "module": "index.esm-bundled.js",
