@@ -78,7 +78,7 @@ export function vReactive<
             abolish.validateAsync(newVal, rules as AbolishCompiledObject).then(([e, r]) => {
                 // Update error and result
                 error.value = e ? e : undefined;
-                validated.value = r;
+                validated.value = r as any;
             });
         } else {
             // Validate target
@@ -86,7 +86,7 @@ export function vReactive<
 
             // Update error and result
             error.value = e ? e : undefined;
-            validated.value = r;
+            validated.value = r as any;
         }
     };
 
