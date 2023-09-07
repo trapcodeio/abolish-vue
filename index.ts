@@ -1,4 +1,4 @@
-import type { AbolishRule, ValidationError } from "abolish/src/Types";
+import type { AbolishRule, ValidationError } from "abolish/src/types";
 import { inject, Plugin, reactive, readonly, Ref, ref, UnwrapRef, watch } from "vue";
 import { extendRef, watchDebounced } from "@vueuse/core";
 import { Abolish, Rule } from "abolish/index.esm";
