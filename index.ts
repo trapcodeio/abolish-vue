@@ -158,7 +158,7 @@ export function vRef<IN, OUT = IN>(
 
     if (options.name) rules = Rule([rules, { $name: options.name }]);
 
-    const watchFn = (newVal: UnwrapRef<typeof original>) => {
+    const watchFn = (newVal: IN) => {
         if (options.async) {
             abolish.checkAsync(newVal, rules).then(([e, r]) => {
                 // Update error and result
@@ -177,12 +177,12 @@ export function vRef<IN, OUT = IN>(
 
     // watch for changes
     if (options.delay) {
-        watchDebounced(original, watchFn, {
+        watchDebounced(original, (o) => watchFn(o), {
             immediate: options.immediate !== false,
             debounce: options.delay === true ? 1000 : options.delay
         });
     } else {
-        watch(original, watchFn, { immediate: options.immediate !== false });
+        watch(original, (o) => watchFn(o), { immediate: options.immediate !== false });
     }
 
     return { original, error: readonly(error), validated };
